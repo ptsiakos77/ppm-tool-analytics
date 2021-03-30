@@ -1,0 +1,20 @@
+{
+  "name": "ppmtool-analytics",
+  "version": "1.0.0",
+  "description": "Analytics upon activities using Amazon AWS Kinesis",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start-worker": "./bin/kcl-bootstrap -e -p ./consumer.properties"
+  },
+  "author": "Panagiotis Tsiakos",
+  "license": "ISC",
+  "dependencies": {
+    "aws-kcl": "^2.1.0",
+    "aws-sdk": "^2.874.0",
+    "dotenv": "^8.2.0"
+  },
+  "engines": {
+    "node": "14.x"
+  }
+}
