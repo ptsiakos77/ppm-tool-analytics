@@ -1,7 +1,8 @@
 'use strict';
 
-require('dotenv').config()
+require('dotenv').config();
 const kcl = require('aws-kcl');
+const ddBClient = require('./dynamo-db-client');
 
 function recordProcessor() {
     let shardId;
@@ -25,7 +26,20 @@ function recordProcessor() {
                 data = new Buffer(record.data, 'base64').toString();
                 sequenceNumber = record.sequenceNumber;
                 partitionKey = record.partitionKey;
-                console.log(`ShardID: ${shardId}, Record: ${data}, SequenceNumber:${sequenceNumber}, PartitionKey: ${partitionKey}`)
+                const Item = {
+                    userId: partitionKey, ...JSON.parse(data)
+                };
+                const params = {
+                    TableName: process.env.DYNAMO_DB_TABLE,
+                    Item
+                };
+                ddBClient.put(params, function(err, data) {
+                    if (err) {
+                        console.error('Unable to add item. Error JSON:', JSON.stringify(err, null, 2));
+                    } else {
+                        console.log('Added item:', JSON.stringify(data, null, 2));
+                    }
+                });
             }
             if (!sequenceNumber) {
                 completeCallback();
@@ -33,24 +47,26 @@ function recordProcessor() {
             }
             // If checkpointing, completeCallback should only be called once checkpoint is complete.
             processRecordsInput.checkpointer.checkpoint(sequenceNumber, (err, sequenceNumber) => {
-                console.log(`Checkpoint successful. ShardID: ${shardId}, SequenceNumber: ${sequenceNumber}`)
+                console.log(`Checkpoint successful. ShardID: ${shardId}, SequenceNumber: ${sequenceNumber}`);
                 completeCallback();
             });
         },
 
         leaseLost: (leaseLostInput, completeCallback) => {
-            console.log(`'Lease was lost for ShardId: ${shardId}'`)
+            console.log(`'Lease was lost for ShardId: ${shardId}'`);
             completeCallback();
         },
 
         shardEnded: (shardEndedInput, completeCallback) => {
-            console.log(`ShardId: ${shardId} has ended. Will checkpoint now.`)
+            console.log(`ShardId: ${shardId} has ended. Will checkpoint now.`);
+            // eslint-disable-next-line handle-callback-err
             shardEndedInput.checkpointer.checkpoint(err => {
                 completeCallback();
             });
         },
 
         shutdownRequested: (shutdownRequestedInput, completeCallback) => {
+            // eslint-disable-next-line handle-callback-err
             shutdownRequestedInput.checkpointer.checkpoint(err => {
                 completeCallback();
             });
