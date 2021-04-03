@@ -3,6 +3,7 @@
 require('dotenv').config();
 const kcl = require('aws-kcl');
 const ddBClient = require('./dynamo-db-client');
+const log = require('./logger');
 
 function recordProcessor() {
     let shardId;
@@ -35,9 +36,9 @@ function recordProcessor() {
                 };
                 ddBClient.put(params, function(err, data) {
                     if (err) {
-                        console.error('Unable to add item. Error JSON:', JSON.stringify(err, null, 2));
+                        log.error('Unable to add item. Error JSON:', JSON.stringify(err, null, 2));
                     } else {
-                        console.log('Added item:', JSON.stringify(data, null, 2));
+                        log.info('Added item:', JSON.stringify(data, null, 2));
                     }
                 });
             }
@@ -47,18 +48,18 @@ function recordProcessor() {
             }
             // If checkpointing, completeCallback should only be called once checkpoint is complete.
             processRecordsInput.checkpointer.checkpoint(sequenceNumber, (err, sequenceNumber) => {
-                console.log(`Checkpoint successful. ShardID: ${shardId}, SequenceNumber: ${sequenceNumber}`);
+                log.info(`Checkpoint successful. ShardID: ${shardId}, SequenceNumber: ${sequenceNumber}`);
                 completeCallback();
             });
         },
 
         leaseLost: (leaseLostInput, completeCallback) => {
-            console.log(`'Lease was lost for ShardId: ${shardId}'`);
+            log.error(`'Lease was lost for ShardId: ${shardId}'`);
             completeCallback();
         },
 
         shardEnded: (shardEndedInput, completeCallback) => {
-            console.log(`ShardId: ${shardId} has ended. Will checkpoint now.`);
+            log.info(`ShardId: ${shardId} has ended. Will checkpoint now.`);
             // eslint-disable-next-line handle-callback-err
             shardEndedInput.checkpointer.checkpoint(err => {
                 completeCallback();

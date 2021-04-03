@@ -12,7 +12,8 @@
   "dependencies": {
     "aws-kcl": "^2.1.0",
     "aws-sdk": "^2.874.0",
-    "dotenv": "^8.2.0"
+    "dotenv": "^8.2.0",
+    "simple-node-logger": "^18.12.24"
   },
   "engines": {
     "node": "14.x"
