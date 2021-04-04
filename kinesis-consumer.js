@@ -30,11 +30,14 @@ function recordProcessor() {
                 const Item = {
                     userId: partitionKey, ...JSON.parse(data)
                 };
+                Object.keys(Item).map(key=> {
+                    Item[key] = {'S': Item[key]};
+                });
                 const params = {
+                    Item,
                     TableName: process.env.DYNAMO_DB_TABLE,
-                    Item
                 };
-                ddBClient.put(params, function(err, data) {
+                ddBClient.putItem(params, function(err, data) {
                     if (err) {
                         log.error('Unable to add item. Error JSON:', JSON.stringify(err, null, 2));
                     } else {
